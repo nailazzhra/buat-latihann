@@ -10,7 +10,7 @@ HIGH_SCORE_FILE = "cf_highscore.txt"
 class CookingFever:
     def __init__(self, root):
         self.root = root
-        self.root.title("🍽️ Cooking Fever - Max 4 Customers!")
+        self.root.title("🍽️ Cooking Fever - 3 Pelanggan")
         self.score = 0
         self.high_score = self.load_high_score()
         self.customers = []
@@ -25,7 +25,7 @@ class CookingFever:
         self.customer_frame = tk.Frame(self.root)
         self.customer_frame.pack()
 
-        for i in range(4):
+        for i in range(3):  # 💡 HANYA 3 PELANGGAN
             frame = tk.Frame(self.customer_frame, bd=2, relief="ridge", padx=5, pady=5)
             frame.grid(row=0, column=i, padx=5)
 
@@ -68,7 +68,7 @@ class CookingFever:
             f.write(str(self.high_score))
 
     def spawn_customers(self):
-        for i in range(4):
+        for i in range(3):  # 💡 Sesuai jumlah pelanggan
             self.update_customer_label(i)
             self.update_timer(i)
 
