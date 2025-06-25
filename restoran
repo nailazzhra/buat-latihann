@@ -1,0 +1,164 @@
+from termcolor import cprint, colored
+import os
+import time
+
+# Menu Restoran (dictionary)
+menu_restoran = {
+    "1": {"nama": "Nasi Goreng", "harga": 20000},
+    "2": {"nama": "Ayam Bakar", "harga": 25000},
+    "3": {"nama": "Mie Ayam", "harga": 18000},
+    "4": {"nama": "Es Teh", "harga": 5000},
+    "5": {"nama": "Jus Alpukat", "harga": 12000},
+    "6": {"nama": "Sate Ayam", "harga": 22000},
+    "7": {"nama": "Soto Ayam", "harga": 21000}
+}
+
+# Tampilan Awal
+def welcome():
+    os.system("cls" if os.name == "nt" else "clear")
+    cprint("=" * 50, "white", "on_red")
+    cprint("|        SELAMAT DATANG DI RASA NUSANTARA       |", "white", "on_yellow")
+    cprint("=" * 50, "white", "on_green")
+    print("\nMenu Hari Ini:")
+    print("-" * 40)
+    print("| ID |     Nama Menu     |     Harga     |")
+    print("-" * 40)
+    for id_menu, detail in menu_restoran.items():
+        print(f"| {id_menu:^2} | {detail['nama']:<17} | Rp.{detail['harga']:>8} |")
+    print("-" * 40)
+
+# Tambah Pesanan
+def tambah_pesanan():
+    total = 0
+    pesanan = []
+    nama = input("Nama Pelanggan: ")
+    print(colored("Ketik 0 untuk menyelesaikan pemesanan\n", "red"))
+
+    while True:
+        id_menu = input("Masukkan ID Menu: ")
+        if id_menu == '0':
+            break
+        elif id_menu in menu_restoran:
+            jumlah = int(input(f"Jumlah {menu_restoran[id_menu]['nama']}: "))
+            harga = jumlah * menu_restoran[id_menu]["harga"]
+            pesanan.append({
+                "id": id_menu,
+                "nama": menu_restoran[id_menu]['nama'],
+                "jumlah": jumlah,
+                "harga": harga
+            })
+            total += harga
+        else:
+            print("Menu tidak tersedia.")
+
+    with open("pesanan.txt", "w") as f:
+        f.write(f"Nama Pelanggan: {nama}\n")
+        f.write("=" * 45 + "\n")
+        for p in pesanan:
+            f.write(f"{p['id']} - {p['nama']} - Jumlah: {p['jumlah']} - Harga: Rp.{p['harga']}\n")
+        f.write("=" * 45 + "\n")
+        f.write(f"Total Harga: Rp.{total}\n")
+
+    print("\n✅ Pesanan berhasil disimpan!\n")
+    return total
+
+# Edit Pesanan
+def edit_pesanan():
+    with open("pesanan.txt", "r") as f:
+        lines = f.readlines()
+
+    print("Daftar Pesanan:")
+    for line in lines:
+        print(line.strip())
+
+    id_edit = input("Masukkan ID menu yang ingin diubah: ")
+    found = False
+    for i, line in enumerate(lines):
+        if line.startswith(f"{id_edit} -"):
+            found = True
+            jumlah_baru = int(input("Jumlah baru: "))
+            nama_makanan = menu_restoran[id_edit]['nama']
+            harga_baru = jumlah_baru * menu_restoran[id_edit]['harga']
+            lines[i] = f"{id_edit} - {nama_makanan} - Jumlah: {jumlah_baru} - Harga: Rp.{harga_baru}\n"
+            break
+
+    if not found:
+        print("ID tidak ditemukan.")
+        return
+
+    with open("pesanan.txt", "w") as f:
+        f.writelines(lines)
+
+    print("✅ Pesanan berhasil diubah!")
+
+# Hapus Pesanan
+def hapus_pesanan():
+    with open("pesanan.txt", "r") as f:
+        lines = f.readlines()
+
+    print("Daftar Pesanan:")
+    for line in lines:
+        print(line.strip())
+
+    id_hapus = input("Masukkan ID menu yang ingin dihapus: ")
+
+    with open("pesanan.txt", "w") as f:
+        for line in lines:
+            if not line.startswith(f"{id_hapus} -"):
+                f.write(line)
+
+    print("✅ Pesanan berhasil dihapus!")
+
+# Voucher
+def tampilkan_voucher():
+    cprint("=" * 50, "white", "on_red")
+    cprint("|     SELAMAT! ANDA MENDAPATKAN VOUCHER     |", "white", "on_yellow")
+    cprint("|         Potongan Rp.10.000 untuk kunjungan berikutnya         |", "white", "on_yellow")
+    cprint("=" * 50, "white", "on_green")
+
+# Cetak Struk
+def cetak_struk(total_harga):
+    with open("pesanan.txt", "r") as f:
+        print("\n========== STRUK PEMBAYARAN ==========")
+        for line in f:
+            print(line.strip())
+
+    while True:
+        try:
+            uang = int(input("Jumlah uang tunai: Rp."))
+            if uang >= total_harga:
+                kembalian = uang - total_harga
+                print(f"Kembalian Anda: Rp.{kembalian}")
+                if total_harga >= 100000:
+                    input("Tekan ENTER untuk klaim voucher")
+                    tampilkan_voucher()
+                else:
+                    print("Terima kasih telah berkunjung :)")
+                break
+            else:
+                print("❌ Uang tidak cukup.")
+        except:
+            print("Masukkan angka yang valid.")
+
+# Program Utama
+welcome()
+total = tambah_pesanan()
+
+while True:
+    print("\nMenu:")
+    print("1. Edit Pesanan")
+    print("2. Hapus Pesanan")
+    print("3. Cetak Struk dan Selesai")
+    pilihan = input("Pilih opsi (1/2/3): ")
+
+    if pilihan == '1':
+        edit_pesanan()
+    elif pilihan == '2':
+        hapus_pesanan()
+    elif pilihan == '3':
+        os.system("cls" if os.name == "nt" else "clear")
+        time.sleep(1)
+        cetak_struk(total)
+        break
+    else:
+        print("Pilihan tidak valid.")
