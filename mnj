@@ -1,207 +1,176 @@
-import pygame
-import random
+from termcolor import cprint, colored
+import os
 import time
-import sys
 
-pygame.init()
-
-WIDTH, HEIGHT = 1200, 750
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("MNJ's Restaurant")
-
-# Font
-FONT_PATH = "c://users/USER/nanaii/GameMasakUAP/UAP/Assets/Super Peanut.ttf"
-try:
-    game_font = pygame.font.Font(FONT_PATH, 30)
-    small_font = pygame.font.Font(FONT_PATH, 24)
-except FileNotFoundError:
-    print("Font tidak ditemukan. Menggunakan default.")
-    game_font = pygame.font.SysFont("arial", 30)
-    small_font = pygame.font.SysFont("arial", 24)
-
-clock = pygame.time.Clock()
-
-# Warna
-BG_COLOR = (255, 248, 230)
-CUSTOMER_PANEL_COLOR = (255, 255, 255)
-HEADER_COLOR = (180, 220, 255)
-TEXT_COLOR_DARK = (50, 50, 50)
-BUTTON_PRIMARY = (150, 220, 130)
-BUTTON_SELECTED = (255, 120, 120)
-BUTTON_HOVER = (180, 240, 160)
-ACCENT_ORANGE = (255, 170, 50)
-BORDER_COLOR = (120, 120, 120)
-
-bahan_tersedia = ["Steak", "Nasi Goreng", "Teh Es"]
-daftar_pesanan = [
-    ["Steak", "Nasi Goreng"],
-    ["Nasi Goreng", "Teh Es"],
-    ["Steak", "Teh Es"],
-    ["Steak", "Nasi Goreng", "Teh Es"]
-]
-
-food_images = {
-    "Steak": pygame.image.load("C:\\Users\\USER\\nanaii\\GameMasakUAP\\UAP\\assets\\steak.png"),
-    "Nasi Goreng": pygame.image.load("C:\\Users\\USER\\nanaii\\GameMasakUAP\\UAP\\assets\\nasgor.png"),
-    "Teh Es": pygame.image.load("C:\\Users\\USER\\nanaii\\GameMasakUAP\\UAP\\assets\\teh_es.png")
+menu_restoran = {
+    "1": {"name": "Chicken Katsu", "price": 25000},
+    "2": {"name": "Special Fried Rice", "price": 30000},
+    "3": {"name": "Original Fried Rice", "price": 25000},
+    "4": {"name": "Chicken Teriyaki", "price": 25000},
+    "5": {"name": "Crispy Chicken with  Spicy Mayo", "price": 25000},
+    "6": {"name": "Blackpepper Chicken", "price": 25000},
+    "7": {"name": "Fish & Chips", "price": 40000},
+    "8": {"name": "Chicken Steak Cheesy", "price": 40000},
+    "9": {"name": "French Fries", "price": 18000},
+    "10": {"name": "Rice", "price": 7000},
+    "11": {"name": "Ice Tea", "price": 10000},
+    "12": {"name": "Ice Lemon Tea", "price": 13000},
+    "13": {"name": "Coffee Latte", "price": 20000},
+    "14": {"name": "Caramel Machiatto", "price": 20000},
+    "15": {"name": "Ice Americano", "price": 22000},
+    "16": {"name": "Milkshake Chocolate", "price": 22000},
+    "17": {"name": "Milkshake Vanilla", "price": 22000},
+    "18": {"name": "Milkshake Strawberry", "price": 22000},
+    "19": {"name": "Original Ice Cream", "price": 20000},
+    "20": {"name": "Special Ice Cream", "price": 25000},
 }
 
-# Tombol
-btn_width, btn_height = 160, 50
-padding_x = 30
-start_x_buttons = (WIDTH - (len(bahan_tersedia)*btn_width + (len(bahan_tersedia)-1)*padding_x)) // 2
-tombol_bahan = {}
-for i, bahan in enumerate(bahan_tersedia):
-    tombol_bahan[bahan] = pygame.Rect(start_x_buttons + i * (btn_width + padding_x), HEIGHT - 100, btn_width, btn_height)
+# Tampilan Awal
+def welcome():
+    os.system("cls" if os.name == "nt" else "clear")
+    cprint("=" * 60, "white", "on_red")
+    cprint("|                 WELCOME TO MNJ'S RESTAURANT              |", "white", "on_yellow")
+    cprint("=" * 60, "white", "on_green")
+    cprint("\nMenu:","yellow")
+    cprint("-" * 60,"yellow")
+    cprint("| ID |               Menu               |       Price      |","yellow")
+    cprint("-" * 60,"yellow")
+    for id_menu, detail in menu_restoran.items():
+        cprint(f"| {id_menu:^2} | {detail['name']:^32} |    Rp.{detail['price']:^10} |","yellow")
+    cprint("-" * 60,"yellow")
 
-# Game variables
-pelanggan, pesanan_aktif, pilihan_user = [], [], []
-skor, level = 0, 1
-level_up_score = 30
-LEVEL_TIME_DECREASE = 3
-GAME_DURATION = 30
-start_time = 0
-remaining_time = GAME_DURATION
-game_state = "loading"
+# Tambah Pesanan
+def tambah_pesanan():
+    total = 0
+    pesanan = []
+    name = input("Customer's Name: ")
+    print(colored("Click 0 to end the order\n", "red"))
 
-def mulai_level(lv):
-    global GAME_DURATION, start_time, remaining_time
-    GAME_DURATION = max(10, 30 - (lv - 1) * LEVEL_TIME_DECREASE)
-    start_time = time.time()
-    remaining_time = GAME_DURATION
-
-def tampilkan_loading():
-    for i in range(0, 101, 5):
-        screen.fill(BG_COLOR)
-        teks = game_font.render(f"Loading... {i}%", True, TEXT_COLOR_DARK)
-        screen.blit(teks, (WIDTH//2 - teks.get_width()//2, HEIGHT//2))
-        pygame.display.flip()
-        pygame.time.delay(10)
-
-def buat_pelanggan():
-    global pelanggan, pesanan_aktif
-    pelanggan = []
-    pesanan_aktif = []
-    for i in range(random.randint(1, 2)):
-        pelanggan.append(f"Pelanggan #{i+1}")
-        pesanan_aktif.append(random.choice(daftar_pesanan))
-
-def gambar_game():
-    screen.fill(BG_COLOR)
-
-    header_rect = pygame.Rect(0, 0, WIDTH, 100)
-    pygame.draw.rect(screen, HEADER_COLOR, header_rect)
-    pygame.draw.rect(screen, BORDER_COLOR, header_rect, 4)
-
-    screen.blit(game_font.render("MNJ's Restaurant!", True, TEXT_COLOR_DARK), (WIDTH//2 - 200, 30))
-    screen.blit(small_font.render(f"Skor: {skor}", True, TEXT_COLOR_DARK), (WIDTH - 150, 30))
-    screen.blit(small_font.render(f"Waktu: {int(remaining_time)}s", True, TEXT_COLOR_DARK), (30, 30))
-    screen.blit(small_font.render(f"Level: {level}", True, TEXT_COLOR_DARK), (WIDTH//2 - 40, 10))
-
-    for i, nama in enumerate(pelanggan):
-        x = 100 + i*550
-        y = 150
-        panel = pygame.Rect(x, y, 400, 140)
-        pygame.draw.rect(screen, CUSTOMER_PANEL_COLOR, panel, border_radius=20)
-        pygame.draw.rect(screen, BORDER_COLOR, panel, 4, border_radius=20)
-        screen.blit(game_font.render(nama, True, TEXT_COLOR_DARK), (x + 10, y + 10))
-
-        for j, pesanan in enumerate(pesanan_aktif[i]):
-            img = pygame.transform.scale(food_images[pesanan], (70, 60))
-            screen.blit(img, (x + 10 + j * 80, y + 70))
-
-    for bahan, rect in tombol_bahan.items():
-        warna = BUTTON_PRIMARY
-        if rect.collidepoint(pygame.mouse.get_pos()):
-            warna = BUTTON_HOVER
-        if bahan in pilihan_user:
-            warna = BUTTON_SELECTED
-
-        pygame.draw.rect(screen, warna, rect, border_radius=10)
-        pygame.draw.rect(screen, BORDER_COLOR, rect, 3, border_radius=10)
-
-        screen.blit(small_font.render(bahan, True, TEXT_COLOR_DARK), (rect.x + 10, rect.y + 10))
-
-    sajikan_btn = pygame.Rect(WIDTH//2 - 100, HEIGHT - 180, 200, 60)
-    pygame.draw.rect(screen, ACCENT_ORANGE, sajikan_btn, border_radius=20)
-    pygame.draw.rect(screen, BORDER_COLOR, sajikan_btn, 4, border_radius=20)
-    screen.blit(game_font.render("SAJIKAN!", True, TEXT_COLOR_DARK), (sajikan_btn.x + 20, sajikan_btn.y + 10))
-    return sajikan_btn
-
-def periksa_pesanan():
-    global skor, pilihan_user, level
-    cocok = False
-    for idx, pesanan in enumerate(pesanan_aktif):
-        if sorted(pilihan_user) == sorted(pesanan):
-            if time.time() - start_time <= 3:
-                skor += 15
-            else:
-                skor += 10
-            cocok = True
-            pelanggan.pop(idx)
-            pesanan_aktif.pop(idx)
+    while True:
+        id_menu = input("Input Menu ID: ")
+        if id_menu == '0':
             break
-    if not cocok:
-        skor -= 5
-    pilihan_user = []
+        elif id_menu in menu_restoran:
+            Total = int(input(f"Total {menu_restoran[id_menu]['name']}: "))
+            price = Total * menu_restoran[id_menu]["price"]
+            pesanan.append({
+                "id": id_menu,
+                "name": menu_restoran[id_menu]['name'],
+                "Total": Total,
+                "price": price
+            })
+            total += price
+        else:
+            print("Menu not available.")
 
-    if skor >= level * level_up_score:
-        level += 1
-        mulai_level(level)
+    with open("pesanan.txt", "w") as f:
+        f.write(f"Customer's Name: {name}\n")
+        f.write("=" * 45 + "\n")
+        for p in pesanan:
+            f.write(f"{p['id']} - {p['name']} - Total: {p['Total']} - price: Rp.{p['price']}\n")
+        f.write("=" * 45 + "\n")
+        f.write(f"Total price: Rp.{total}\n")
 
-    if not pelanggan:
-        buat_pelanggan()
+    print("\n✅ Succesfull Order! ✅\n")
+    return total
 
-def tampilkan_game_over():
-    screen.fill(BG_COLOR)
-    screen.blit(game_font.render("GAME OVER", True, ACCENT_ORANGE), (WIDTH//2 - 120, HEIGHT//2 - 100))
-    screen.blit(small_font.render(f"Final Score: {skor}", True, TEXT_COLOR_DARK), (WIDTH//2 - 80, HEIGHT//2))
-    screen.blit(small_font.render("[R] Restart | [Q] Quit", True, TEXT_COLOR_DARK), (WIDTH//2 - 100, HEIGHT//2 + 60))
-    pygame.display.flip()
+# Edit Pesanan
+def edit_pesanan():
+    with open("pesanan.txt", "r") as f:
+        lines = f.readlines()
 
-# MAIN
-jalankan = True
-tampilkan_loading()
-buat_pelanggan()
-mulai_level(level)
-game_state = "main"
+    print("Order List:")
+    for line in lines:
+        print(line.strip())
 
-while jalankan:
-    if game_state == "main":
-        elapsed = time.time() - start_time
-        remaining_time = GAME_DURATION - elapsed
-        if remaining_time <= 0:
-            game_state = "game_over"
+    id_edit = input("Input Menu ID You Want to Replace: ")
+    found = False
+    for i, line in enumerate(lines):
+        if line.startswith(f"{id_edit} -"):
+            found = True
+            Total_baru = int(input("New Total: "))
+            name_makanan = menu_restoran[id_edit]['name']
+            price_baru = Total_baru * menu_restoran[id_edit]['price']
+            lines[i] = f"{id_edit} - {name_makanan} - Total: {Total_baru} - price: Rp.{price_baru}\n"
+            break
 
-    clock.tick(30)
-    for e in pygame.event.get():
-        if e.type == pygame.QUIT:
-            jalankan = False
-        if game_state == "main" and e.type == pygame.MOUSEBUTTONDOWN:
-            pos = e.pos
-            for bahan, rect in tombol_bahan.items():
-                if rect.collidepoint(pos):
-                    if bahan not in pilihan_user:
-                        pilihan_user.append(bahan)
-            if gambar_game().collidepoint(pos):
-                periksa_pesanan()
-        if game_state == "game_over" and e.type == pygame.KEYDOWN:
-            if e.key == pygame.K_r:
-                skor = 0
-                level = 1
-                pilihan_user = []
-                buat_pelanggan()
-                mulai_level(level)
-                game_state = "main"
-            elif e.key == pygame.K_q:
-                jalankan = False
+    if not found:
+        print("ID Not Found!!.")
+        return
 
-    if game_state == "main":
-        gambar_game()
-    elif game_state == "game_over":
-        tampilkan_game_over()
+    with open("pesanan.txt", "w") as f:
+        f.writelines(lines)
 
-    pygame.display.flip()
+    print("✅ Order Succesfully Replaced ✅")
 
-pygame.quit()
-sys.exit()
+# Hapus Pesanan
+def hapus_pesanan():
+    with open("pesanan.txt", "r") as f:
+        lines = f.readlines()
+
+    print("Daftar Pesanan:")
+    for line in lines:
+        print(line.strip())
+
+    id_hapus = input("Input Menu ID You Want to Delete: ")
+
+    with open("pesanan.txt", "w") as f:
+        for line in lines:
+            if not line.startswith(f"{id_hapus} -"):
+                f.write(line)
+
+    print("✅ Order Successfully Deleted! ✅")
+
+# Voucher
+def tampilkan_voucher():
+    cprint("=" * 60, "white", "on_red")
+    cprint("|            CONGRATULATIONS! YOU GOT A VOUCHER            |", "white", "on_yellow")
+    cprint("|       Rp25.000 Discount for Next Visit (only once)       |", "white", "on_yellow")
+    cprint("=" * 60, "white", "on_green")
+
+# Cetak Struk
+def cetak_struk(total_price):
+    with open("pesanan.txt", "r") as f:
+        cprint("\n========== RECEIPT ==========","yellow")
+        for line in f:
+            cprint(line.strip(),"yellow")
+
+    while True:
+        try:
+            uang = int(input("Total Cash: Rp."))
+            if uang >= total_price:
+                kembalian = uang - total_price
+                cprint(f"Refunds: Rp.{kembalian}","yellow")
+                if total_price >= 100000:
+                    input("Click ENTER to Claim Your Voucher")
+                    tampilkan_voucher()
+                else:
+                    cprint("Thank You for Visiting :)","yellow")
+                break
+            else:
+                print("❌ Not Enough Money. ❌")
+        except:
+            print("Input Valid Number!.")
+
+# Program Utama
+welcome()
+total = tambah_pesanan()
+
+while True:
+    print("\nMenu:")
+    print("1. Edit Order")
+    print("2. Delete order")
+    print("3. Print Receipt")
+    pilihan = input("Choose Option (1/2/3): ")
+
+    if pilihan == '1':
+        edit_pesanan()
+    elif pilihan == '2':
+        hapus_pesanan()
+    elif pilihan == '3':
+        os.system("cls" if os.name == "nt" else "clear")
+        time.sleep(1)
+        cetak_struk(total)
+        break
+    else:
+        print("Invalid Option!")
